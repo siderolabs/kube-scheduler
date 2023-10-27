@@ -5,8 +5,9 @@ build:
 
 gen:
 	deepcopy-gen --input-dirs ./apis/config --go-header-file ./hack/boilerplate.txt  -O zz_generated.deepcopy
-	defaulter-gen --input-dirs ./apis/config --go-header-file ./hack/boilerplate.txt  -O zz_generated.defaults
-	conversion-gen --input-dirs ./apis/config --go-header-file ./hack/boilerplate.txt  -O zz_generated.conversion
+	deepcopy-gen --input-dirs ./apis/config/v1alpha1 --go-header-file ./hack/boilerplate.txt  -O zz_generated.deepcopy
+	defaulter-gen --input-dirs ./apis/config/v1alpha1 --go-header-file ./hack/boilerplate.txt  -O zz_generated.defaults
+	conversion-gen --input-dirs ./apis/config/v1alpha1 --go-header-file ./hack/boilerplate.txt  -O zz_generated.conversion
 
 tools:
 	go install k8s.io/code-generator/cmd/deepcopy-gen@v0.28.3

@@ -1,8 +1,6 @@
-package config
+package v1alpha1
 
 import (
-	"log"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	schedschemev1 "k8s.io/kube-scheduler/config/v1"
@@ -10,7 +8,7 @@ import (
 )
 
 // SchemeGroupVersion is group version used to register these objects
-var SchemeGroupVersion = schema.GroupVersion{Group: schedconfig.GroupName, Version: runtime.APIVersionInternal}
+var SchemeGroupVersion = schema.GroupVersion{Group: schedconfig.GroupName, Version: "v1"}
 
 var (
 	// localSchemeBuilder and AddToScheme will stay in k8s.io/kubernetes.
@@ -21,7 +19,6 @@ var (
 
 // addKnownTypes registers known types to the given scheme
 func addKnownTypes(scheme *runtime.Scheme) error {
-	log.Printf("Adding EmissionsArgs to %q", SchemeGroupVersion)
 	scheme.AddKnownTypes(SchemeGroupVersion, &EmissionsArgs{})
 
 	return nil
@@ -32,4 +29,6 @@ func init() {
 	// generated functions takes place in the generated files. The separation
 	// makes the code compile even when the generated files are missing.
 	localSchemeBuilder.Register(addKnownTypes)
+	localSchemeBuilder.Register(RegisterDefaults)
+	localSchemeBuilder.Register(RegisterConversions)
 }

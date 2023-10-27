@@ -6,6 +6,7 @@ import (
 	"k8s.io/component-base/cli"
 	"k8s.io/kubernetes/cmd/kube-scheduler/app"
 
+	_ "github.com/siderolabs/kube-scheduler/apis/config/scheme"
 	"github.com/siderolabs/kube-scheduler/pkg/plugins/emissions"
 )
 
