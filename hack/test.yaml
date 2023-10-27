@@ -1,0 +1,13 @@
+apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+clientConnection:
+  kubeconfig: /system/secrets/kubernetes/kube-scheduler/kubeconfig
+profiles:
+  - schedulerName: default-scheduler
+    plugins:
+      preFilter:
+        enabled:
+        - name: Emissions
+    pluginConfig:
+    - name: Emissions
+      args: {}
