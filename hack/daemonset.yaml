@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-scheduler-siderolabs
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-scheduler-siderolabs-as-volume-scheduler
+subjects:
+- kind: ServiceAccount
+  name: kube-scheduler-siderolabs
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: system:volume-scheduler
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kube-scheduler-siderolabs-extension-apiserver-authentication-reader
+  namespace: kube-system
+roleRef:
+  kind: Role
+  name: extension-apiserver-authentication-reader
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: kube-scheduler-siderolabs
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-scheduler-siderolabs
+subjects:
+- kind: ServiceAccount
+  name: kube-scheduler-siderolabs
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: system:kube-scheduler
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-scheduler-siderolabs-config
+  namespace: kube-system
+data:
+  config: |
+    apiVersion: kubescheduler.config.k8s.io/v1
+    kind: KubeSchedulerConfiguration
+    leaderElection:
+      leaderElect: false
+    profiles:
+      - schedulerName: kube-scheduler-siderolabs
+        plugins:
+          preFilter:
+            enabled:
+            - name: Emissions
+        pluginConfig:
+        - name: Emissions
+          args: {}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-scheduler-siderolabs
+  namespace: kube-system
+  labels:
+    k8s-app: fluentd-logging
+spec:
+  selector:
+    matchLabels:
+      name: kube-scheduler-siderolabs
+  template:
+    metadata:
+      labels:
+        name: kube-scheduler-siderolabs
+    spec:
+      serviceAccountName: kube-scheduler-siderolabs
+      priorityClassName: system-cluster-critical
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ''
+      containers:
+      - name: kube-scheduler-siderolabs
+        image: ghcr.io/siderolabs/kube-scheduler:latest
+        command:
+        - /usr/local/bin/kube-scheduler
+        args:
+        - --config=/etc/kubernetes/kube-scheduler-configuration.yaml
+        volumeMounts:
+        - name: credentials-volume
+          mountPath: /etc/kubernetes/kubeconfig
+        - name: config-volume
+          mountPath: /etc/kubernetes
+      volumes:
+        - name: credentials-volume
+          projected:
+            sources:
+            - serviceAccountToken:
+                path: my-proj-vol
+        - name: config-volume
+          configMap:
+            name: kube-scheduler-siderolabs-config
+            items:
+            - key: config
+              path: kube-scheduler-configuration.yaml

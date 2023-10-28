@@ -44,18 +44,17 @@ func (n *Emissions) Name() string {
 }
 
 func (e *Emissions) PreFilter(ctx context.Context, state *framework.CycleState, pod *v1.Pod) (*framework.PreFilterResult, *framework.Status) {
-	// The absence of a priority implies the highest priority.
+	// A priority is required.
 	if pod.Spec.Priority == nil {
-		return nil, framework.NewStatus(framework.Success, "")
+		return nil, framework.NewStatus(framework.UnschedulableAndUnresolvable, "no priority set on pod")
 	}
 
 	// TODO: We need to determine this number dynamically AND check if the current index allows for this.
-	if *pod.Spec.Priority > 50 {
+	if *pod.Spec.Priority > 0 {
 		return nil, framework.NewStatus(framework.Success, "")
 	}
 
-	// Return framework.UnschedulableAndUnresolvable to avoid any preemption attempts.
-	return nil, framework.NewStatus(framework.UnschedulableAndUnresolvable, "low priority")
+	return nil, framework.NewStatus(framework.UnschedulableAndUnresolvable, "pod priority lower than index")
 }
 
 func (e *Emissions) PreFilterExtensions() framework.PreFilterExtensions {
