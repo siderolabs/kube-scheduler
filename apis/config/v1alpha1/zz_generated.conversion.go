@@ -7,6 +7,7 @@ package v1alpha1
 
 import (
 	config "github.com/siderolabs/kube-scheduler/apis/config"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -32,6 +33,15 @@ func RegisterConversions(s *runtime.Scheme) error {
 }
 
 func autoConvert_v1alpha1_EmissionsArgs_To_config_EmissionsArgs(in *EmissionsArgs, out *config.EmissionsArgs, s conversion.Scope) error {
+	if err := v1.Convert_Pointer_string_To_string(&in.WattTimeUsername, &out.WattTimeUsername, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_Pointer_string_To_string(&in.WattTimePassword, &out.WattTimePassword, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_Pointer_string_To_string(&in.WattTimeBA, &out.WattTimeBA, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -41,6 +51,15 @@ func Convert_v1alpha1_EmissionsArgs_To_config_EmissionsArgs(in *EmissionsArgs, o
 }
 
 func autoConvert_config_EmissionsArgs_To_v1alpha1_EmissionsArgs(in *config.EmissionsArgs, out *EmissionsArgs, s conversion.Scope) error {
+	if err := v1.Convert_string_To_Pointer_string(&in.WattTimeUsername, &out.WattTimeUsername, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_string_To_Pointer_string(&in.WattTimePassword, &out.WattTimePassword, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_string_To_Pointer_string(&in.WattTimeBA, &out.WattTimeBA, s); err != nil {
+		return err
+	}
 	return nil
 }
 

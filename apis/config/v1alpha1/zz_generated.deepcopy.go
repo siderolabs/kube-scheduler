@@ -13,6 +13,21 @@ import (
 func (in *EmissionsArgs) DeepCopyInto(out *EmissionsArgs) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
+	if in.WattTimeUsername != nil {
+		in, out := &in.WattTimeUsername, &out.WattTimeUsername
+		*out = new(string)
+		**out = **in
+	}
+	if in.WattTimePassword != nil {
+		in, out := &in.WattTimePassword, &out.WattTimePassword
+		*out = new(string)
+		**out = **in
+	}
+	if in.WattTimeBA != nil {
+		in, out := &in.WattTimeBA, &out.WattTimeBA
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 

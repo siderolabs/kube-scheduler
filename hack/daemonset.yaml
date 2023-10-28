@@ -1,3 +1,5 @@
+# See https://kubernetes.io/docs/tasks/extend-kubernetes/configure-multiple-schedulers/
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -44,6 +46,31 @@ roleRef:
   name: system:kube-scheduler
   apiGroup: rbac.authorization.k8s.io
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: kube-system
+  name: pod-evicter
+rules:
+- apiGroups: [""]
+  resources: ["pods/eviction"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-scheduler-siderolabs-pod-evicter
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: pod-evicter
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: kube-scheduler-siderolabs
+  namespace: kube-system
+---
+# See https://kubernetes.io/docs/reference/config-api/kube-scheduler-config.v1
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -63,7 +90,12 @@ data:
             - name: Emissions
         pluginConfig:
         - name: Emissions
-          args: {}
+          args:
+            apiVersion: kubescheduler.config.k8s.io/v1
+            kind: EmissionsArgs
+            wattTimeUsername: example
+            wattTimePassword: example
+            wattTimeBA: CAISO_NORTH
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -101,6 +133,8 @@ spec:
           mountPath: /etc/kubernetes/kubeconfig
         - name: config-volume
           mountPath: /etc/kubernetes
+        - name: tls-volume
+          mountPath: /etc/ssl
       volumes:
         - name: credentials-volume
           projected:
@@ -113,3 +147,7 @@ spec:
             items:
             - key: config
               path: kube-scheduler-configuration.yaml
+        - name: tls-volume
+          hostPath:
+            path: /etc/ssl
+            type: Directory

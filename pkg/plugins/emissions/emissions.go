@@ -3,20 +3,28 @@ package emissions
 import (
 	"context"
 	"fmt"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/pkg/scheduler/framework"
 
 	"github.com/siderolabs/kube-scheduler/apis/config"
+	"github.com/siderolabs/kube-scheduler/pkg/controllers/node"
+	"github.com/siderolabs/kube-scheduler/pkg/controllers/pod"
+	"github.com/siderolabs/kube-scheduler/pkg/energy/watttime"
 )
 
-// Emissions is a score plugin that favors nodes based on their
-// network traffic amount. Nodes with less traffic are favored.
+// Emissions is a prefilter plugin that schedules pods based
+// on the current emssisions score for a region.
 // Implements framework.ScorePlugin
 type Emissions struct {
 	handle framework.Handle
+	args   *config.EmissionsArgs
 }
 
 // Name is the name of the plugin used in the Registry and configurations.
@@ -33,8 +41,39 @@ func New(obj runtime.Object, h framework.Handle) (framework.Plugin, error) {
 
 	klog.Infof("[Emissions] args received. %v", args)
 
+	ctx := context.TODO()
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	wattTimeClient := watttime.NewClient(args.WattTimeUsername, args.WattTimePassword, args.WattTimeBA)
+
+	nodeFactory := informers.NewSharedInformerFactory(clientset, 5*time.Minute)
+	nodeManager, err := node.NewNodeManager(nodeFactory, clientset, wattTimeClient)
+	if err != nil {
+		klog.Fatal(err)
+	}
+
+	nodeManager.Run(ctx.Done())
+
+	podFactory := informers.NewSharedInformerFactory(clientset, 5*time.Minute)
+	podManager, err := pod.NewPodManager(podFactory, clientset, wattTimeClient)
+	if err != nil {
+		klog.Fatal(err)
+	}
+
+	podManager.Run(ctx.Done())
+
 	return &Emissions{
 		handle: h,
+		args:   args,
 	}, nil
 }
 
@@ -49,8 +88,19 @@ func (e *Emissions) PreFilter(ctx context.Context, state *framework.CycleState, 
 		return nil, framework.NewStatus(framework.UnschedulableAndUnresolvable, "no priority set on pod")
 	}
 
-	// TODO: We need to determine this number dynamically AND check if the current index allows for this.
-	if *pod.Spec.Priority > 0 {
+	wattTimeClient := watttime.NewClient(e.args.WattTimeUsername, e.args.WattTimePassword, e.args.WattTimeBA)
+
+	err := wattTimeClient.Login()
+	if err != nil {
+		return nil, framework.NewStatus(framework.UnschedulableAndUnresolvable, fmt.Sprintf("failed to log in to WattTime: %v", err))
+	}
+
+	index, err := wattTimeClient.Index()
+	if err != nil {
+		return nil, framework.NewStatus(framework.UnschedulableAndUnresolvable, fmt.Sprintf("failed to get index from WattTime: %v", err))
+	}
+
+	if *pod.Spec.Priority > int32(index) {
 		return nil, framework.NewStatus(framework.Success, "")
 	}
 
@@ -60,19 +110,3 @@ func (e *Emissions) PreFilter(ctx context.Context, state *framework.CycleState, 
 func (e *Emissions) PreFilterExtensions() framework.PreFilterExtensions {
 	return nil
 }
-
-// func (n *Emissions) NormalizeScore(ctx context.Context, state *framework.CycleState, pod *v1.Pod, scores framework.NodeScoreList) *framework.Status {
-// 	var higherScore int64
-// 	for _, node := range scores {
-// 		if higherScore < node.Score {
-// 			higherScore = node.Score
-// 		}
-// 	}
-
-// 	for i, node := range scores {
-// 		scores[i].Score = framework.MaxNodeScore - (node.Score * framework.MaxNodeScore / higherScore)
-// 	}
-
-// 	klog.Infof("[Emissions] Nodes final score: %v", scores)
-// 	return nil
-// }
