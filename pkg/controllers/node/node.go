@@ -137,26 +137,8 @@ func (c *NodeManager) nodeAdd(obj interface{}) {
 }
 
 func (c *NodeManager) nodeUpdate(old, new interface{}) {
-	oldNode := old.(*v1.Node)
 	newNode := new.(*v1.Node)
-
-	needsUpdate := false
-
-	if oldNode.Annotations[bmcEndpointAnnotation] != newNode.Annotations[bmcEndpointAnnotation] {
-		needsUpdate = true
-	}
-
-	if oldNode.Annotations[bmcUserAnnotation] != newNode.Annotations[bmcUserAnnotation] {
-		needsUpdate = true
-	}
-
-	if oldNode.Annotations[bmcPasswordAnnotation] != newNode.Annotations[bmcPasswordAnnotation] {
-		needsUpdate = true
-	}
-
-	if needsUpdate {
-		c.nodeAdd(newNode)
-	}
+	c.nodeAdd(newNode)
 }
 
 func (c *NodeManager) nodeDelete(obj interface{}) {

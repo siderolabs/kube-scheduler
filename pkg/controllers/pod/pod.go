@@ -73,12 +73,8 @@ func (c *PodManager) podAdd(obj interface{}) {
 }
 
 func (c *PodManager) podUpdate(old, new interface{}) {
-	oldPod := old.(*v1.Pod)
 	newPod := new.(*v1.Pod)
-
-	if oldPod.Spec.Priority != newPod.Spec.Priority {
-		c.podAdd(newPod)
-	}
+	c.podAdd(newPod)
 }
 
 func (c *PodManager) podDelete(obj interface{}) {
