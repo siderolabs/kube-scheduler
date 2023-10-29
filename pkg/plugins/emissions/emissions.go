@@ -104,7 +104,7 @@ func (e *Emissions) PreFilter(ctx context.Context, state *framework.CycleState, 
 		return nil, framework.NewStatus(framework.Success, "")
 	}
 
-	return nil, framework.NewStatus(framework.UnschedulableAndUnresolvable, "pod priority lower than index")
+	return nil, framework.NewStatus(framework.UnschedulableAndUnresolvable, fmt.Sprintf("pod priority (%d) lower than index (%d)", *pod.Spec.Priority, index))
 }
 
 func (e *Emissions) PreFilterExtensions() framework.PreFilterExtensions {
