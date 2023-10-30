@@ -1,7 +1,9 @@
+PUSH ?= false
+
 all: gen build
 
 build:
-	docker build -t ghcr.io/siderolabs/kube-scheduler .
+	docker buildx build --push=$(PUSH) --platform=linux/amd64,linux/arm64 -t ghcr.io/siderolabs/kube-scheduler .
 
 gen:
 	deepcopy-gen --input-dirs ./apis/config --go-header-file ./hack/boilerplate.txt  -O zz_generated.deepcopy

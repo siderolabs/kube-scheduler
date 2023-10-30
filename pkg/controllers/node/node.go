@@ -23,10 +23,6 @@ const bmcPasswordAnnotation = "bmc.siderolabs.com/password"
 
 type BMCs map[string]*bmc.BMCInfo
 
-var (
-	bmcs = make(BMCs)
-)
-
 // NodeManager manages the power state of nodes.
 type NodeManager struct {
 	informerFactory informers.SharedInformerFactory
@@ -135,8 +131,6 @@ func (c *NodeManager) nodeUpdate(old, new interface{}) {
 
 func (c *NodeManager) nodeDelete(obj interface{}) {
 	node := obj.(*v1.Node)
-
-	delete(bmcs, node.Name)
 
 	klog.Infof("node deleted: %q", node.Name)
 }

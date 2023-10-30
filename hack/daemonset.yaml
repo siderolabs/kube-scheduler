@@ -103,7 +103,7 @@ metadata:
   name: kube-scheduler-siderolabs
   namespace: kube-system
   labels:
-    k8s-app: fluentd-logging
+    k8s-app: kube-scheduler-siderolabs
 spec:
   selector:
     matchLabels:
@@ -133,8 +133,6 @@ spec:
           mountPath: /etc/kubernetes/kubeconfig
         - name: config-volume
           mountPath: /etc/kubernetes
-        - name: tls-volume
-          mountPath: /etc/ssl
       volumes:
         - name: credentials-volume
           projected:
@@ -147,7 +145,3 @@ spec:
             items:
             - key: config
               path: kube-scheduler-configuration.yaml
-        - name: tls-volume
-          hostPath:
-            path: /etc/ssl
-            type: Directory
