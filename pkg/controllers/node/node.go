@@ -78,14 +78,6 @@ func (c *NodeManager) nodeAdd(obj interface{}) {
 	}
 	defer client.Close()
 
-	// TODO: Login every 30 minutes
-	err = c.wattTimeClient.Login()
-	if err != nil {
-		log.Printf("failed to login: %v\n", err)
-
-		return
-	}
-
 	index, err := c.wattTimeClient.Index()
 	if err != nil {
 		log.Printf("failed to get index: %v\n", err)

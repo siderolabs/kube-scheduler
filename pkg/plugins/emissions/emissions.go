@@ -3,6 +3,7 @@ package emissions
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -54,6 +55,12 @@ func New(obj runtime.Object, h framework.Handle) (framework.Plugin, error) {
 	}
 
 	wattTimeClient := watttime.NewClient(args.WattTimeUsername, args.WattTimePassword, args.WattTimeBA)
+	err = wattTimeClient.Login()
+	if err != nil {
+		log.Printf("failed to login to WattTime: %v\n", err)
+	}
+
+	go wattTimeLoginLoop(wattTimeClient)
 
 	nodeFactory := informers.NewSharedInformerFactory(clientset, 5*time.Minute)
 	nodeManager, err := node.NewNodeManager(nodeFactory, clientset, wattTimeClient)
@@ -109,4 +116,17 @@ func (e *Emissions) PreFilter(ctx context.Context, state *framework.CycleState, 
 
 func (e *Emissions) PreFilterExtensions() framework.PreFilterExtensions {
 	return nil
+}
+
+func wattTimeLoginLoop(wattTimeClient *watttime.Client) {
+	tick := time.Tick(15 * time.Minute)
+
+	for {
+		<-tick
+
+		err := wattTimeClient.Login()
+		if err != nil {
+			log.Printf("failed to login to WattTime: %v\n", err)
+		}
+	}
 }
