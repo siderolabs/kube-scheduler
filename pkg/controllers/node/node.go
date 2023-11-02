@@ -60,13 +60,9 @@ func (c *NodeManager) nodeAdd(obj interface{}) {
 		return
 	}
 
-	log.Printf("node %q is candidate", node.Name)
+	log.Printf("node %q has BMC annotations", node.Name)
 
 	bmcInfo := &bmc.BMCInfo{Endpoint: endpoint, User: user, Pass: pass}
-
-	if isIdle(node) {
-		log.Printf("node %q is idle", node.Name)
-	}
 
 	client, err := bmc.NewClient(bmcInfo)
 	if err != nil {
@@ -81,20 +77,11 @@ func (c *NodeManager) nodeAdd(obj interface{}) {
 		return
 	}
 
-	pod, err := podInQueueThatFits(c.clientset, index)
+	podIsInQueueThatFits, err := podInQueueThatFits(c.clientset, index)
 	if err != nil {
 		log.Printf("failed to determine if a pod is in the queue: %v", err)
 
 		return
-	}
-
-	if pod {
-		log.Printf("pod(s) in queue that can fit node")
-
-		// Ensure is powered on.
-		log.Printf("node %q is idle", node.Name)
-	} else {
-		// ?
 	}
 
 	isPoweredOn, err := client.IsPoweredOn()
@@ -104,22 +91,30 @@ func (c *NodeManager) nodeAdd(obj interface{}) {
 		return
 	}
 
-	// TODO: Make this configurable.
-	if index > 50 {
+	if podIsInQueueThatFits {
+		log.Printf("pod(s) in queue that can fit node")
+
 		if isPoweredOn {
+			// Nothing to do.
+			return
+		}
+
+		if !isPoweredOn {
 			log.Printf("index is %d%%, powering off %q", index, node.Name)
 
-			client.PowerOff()
-		} else {
-			log.Printf("node is in desired power state (off): %q", node.Name)
+			err = client.PowerOn()
+			if err != nil {
+				log.Printf("failed to power on node %q", node.Name)
+			}
 		}
 	} else {
-		if isPoweredOn {
-			log.Printf("node is in desired power state (on): %q", node.Name)
-		} else {
-			log.Printf("index is %d%%, powering on %q", index, node.Name)
+		if isIdle(node) {
+			log.Printf("node %q is idle, powering off", node.Name)
 
-			client.PowerOn()
+			err = client.PowerOff()
+			if err != nil {
+				log.Printf("failed to power off node %q", node.Name)
+			}
 		}
 	}
 }
@@ -170,6 +165,10 @@ func podInQueueThatFits(clientset *kubernetes.Clientset, index int) (bool, error
 	}
 
 	for _, pod := range pods.Items {
+		if pod.Spec.SchedulerName != "kube-scheduler-siderolabs" {
+			continue
+		}
+
 		if pod.Status.Phase == v1.PodPending {
 			if pod.Spec.Priority != nil && *pod.Spec.Priority >= int32(index) {
 				return true, nil
