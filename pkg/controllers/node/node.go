@@ -100,7 +100,7 @@ func (c *NodeManager) nodeAdd(obj interface{}) {
 		}
 
 		if !isPoweredOn {
-			log.Printf("index is %d%%, powering off %q", index, node.Name)
+			log.Printf("index is %d%%, powering on %q", index, node.Name)
 
 			err = client.PowerOn()
 			if err != nil {
