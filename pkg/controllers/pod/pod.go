@@ -101,7 +101,7 @@ func NewPodManager(informerFactory informers.SharedInformerFactory, clientset *k
 }
 
 func Run(clientset *kubernetes.Clientset, wattTimeClient *watttime.Client) {
-	factory := informers.NewSharedInformerFactory(clientset, 5*time.Minute)
+	factory := informers.NewSharedInformerFactory(clientset, (5*time.Minute)/2)
 	manager, err := NewPodManager(factory, clientset, wattTimeClient)
 	if err != nil {
 		klog.Fatal(err)

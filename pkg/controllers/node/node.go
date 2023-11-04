@@ -155,7 +155,7 @@ func NewNodeManager(informerFactory informers.SharedInformerFactory, clientset *
 }
 
 func isIdle(node *v1.Node) bool {
-	return node.Status.Allocatable.Pods() == node.Status.Capacity.Pods()
+	return node.Status.Allocatable.Pods().Equal(*node.Status.Capacity.Pods())
 }
 
 func podInQueueThatFits(clientset *kubernetes.Clientset, index int) (bool, error) {
