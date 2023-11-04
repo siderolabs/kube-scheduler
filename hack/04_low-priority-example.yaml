@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: low-priority-workload
+  labels:
+    app: low-priority-workload
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: low-priority-workload
+  template:
+    metadata:
+      labels:
+        app: low-priority-workload
+    spec:
+      schedulerName: kube-scheduler-siderolabs
+      priorityClassName: low-priority
+      containers:
+      - name: low-priority-workload
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
